@@ -80,30 +80,23 @@ function main() {
 
     // IFS parameters
     var sierpinkski_triangle = {
-        w0Inv: [2.1, 0, 2.1 * 0.5, 0, 2.1, 2.1 * 0.5],
-        w1Inv: [2.1, 0, -2.1 * 0.5, 0, 2.1, 2.1 * 0.5],
-        w2Inv: [2.1, 0, 0, 0, 2.1, -2.1 * 0.5]
-    }
-    var spiral = {
-        w0Inv: [1, 0.5, 0.85, -0.5, 1, -0.8]
-    }
-    var dragon = {
-        w0Inv: [Math.cos(Math.PI/4)*Math.sqrt(2), Math.sin(Math.PI/4)*Math.sqrt(2), 0
-                -Math.sin(Math.PI/4)*Math.sqrt(2), Math.cos(Math.PI/4)*Math.sqrt(2), 0],
-        w1Inv: [Math.cos(3*Math.PI/4)*Math.sqrt(2), Math.sin(3*Math.PI/4)*Math.sqrt(2), -Math.cos(3*Math.PI/4)*Math.sqrt(2),
-                -Math.sin(3*Math.PI/4)*Math.sqrt(2), Math.cos(3*Math.PI/4)*Math.sqrt(2), -Math.cos(3*Math.PI/4)*Math.sqrt(2)]
-    }
-    var fern = {
-        w0Inv: [0, 0, 0, 0, 6.25, 0],
-        w1Inv: [1.173, -0.055, 0, 0.055, 1.173, -1.173*1.60]
+        numFunctions: 3,
+        w0Mat: [2.1, 0, 0, 2.1],
+        w0o: [0, -2.1/2]
     }
 
-    var IFS = fern;
+    var IFS = sierpinkski_triangle;
 
     // Param uniforms for IFS functions
-    var w0InvUniformLocation = gl.getUniformLocation(transformProgram, "u_w0_inv");
-    var w1InvUniformLocation = gl.getUniformLocation(transformProgram, "u_w1_inv");
-    var w2InvUniformLocation = gl.getUniformLocation(transformProgram, "u_w2_inv");
+    var w0MatLoc = gl.getUniformLocation(transformProgram, "w0Mat");
+    var w0yLoc = gl.getUniformLocation(transformProgram, "w0y");
+    var w0oLoc = gl.getUniformLocation(transformProgram, "w0o");
+    var w1xLoc = gl.getUniformLocation(transformProgram, "w1x");
+    var w1yLoc = gl.getUniformLocation(transformProgram, "w1y");
+    var w1oLoc = gl.getUniformLocation(transformProgram, "w1o");
+    var w2xLoc = gl.getUniformLocation(transformProgram, "w2x");
+    var w2yLoc = gl.getUniformLocation(transformProgram, "w2y");
+    var w2oLoc = gl.getUniformLocation(transformProgram, "w2o");
 
     // Create initial texture
     var texture = gl.createTexture();
@@ -144,9 +137,9 @@ function main() {
             gl.useProgram(transformProgram);
             // Pass uniforms
             gl.uniform1f(timeUniformLocation, time);
-            gl.uniform1fv(w0InvUniformLocation, IFS.w0Inv);
-            gl.uniform1fv(w1InvUniformLocation, IFS.w1Inv);
-            // gl.uniform1fv(w2InvUniformLocation, IFS.w2Inv);
+            gl.uniformMatrix2fv(w0MatLoc, false, IFS.w0Mat);
+            gl.uniform2fv(w0oLoc, IFS.w0o);
+
             gl.bindFramebuffer(gl.FRAMEBUFFER, current.fb);
             gl.bindTexture(gl.TEXTURE_2D, prev.tex);
             gl.clearColor(0, 0, 0, 1);
