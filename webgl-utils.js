@@ -19,7 +19,6 @@
 
     }
     xhttp.send();
-
     return filetext;
 }
 
