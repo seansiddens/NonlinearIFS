@@ -1,10 +1,11 @@
+// Stuff that still needs to be done ----------------------------------------------------
 // TODO: Implement nonlinear variations and associated jacobians
 // TODO: Different render modes (visualize distance field)
 // TODO: Different view mode (view texture or plane)
 // TODO: Configurable starting set (shapes, bi-unit square, unit square, image?, etc)
 // TODO: Color picker for functions
 
-// Globals
+// Global Variables ---------------------------------------------------------------------
 var gl;
 var initProgram;
 var transformProgram;
@@ -12,22 +13,43 @@ var displayProgram;
 var prev;
 var current;
 var params;
+var affine_inverses;
 
-/***
+// Shaders ------------------------------------------------------------------------------
+const vertSource = () => {
+   return `
+   
+#version 300 es
+in vec4 a_position;
+in vec2 a_texCoord;
+
+out vec2 v_texCoord;
+
+
+void main() {
+    gl_Position = a_position;
+    v_texCoord = a_texCoord;`;
+}
+
+
+
+
+
+/**
  * Returns the nth column of a matrix.
  * @param mat
  * @param n
- * @returns {Array}
+ * @returns {Array[]}
  */
 function getColumn(mat, n) {
     return mat.map(x => x[n]);
 }
 
-/***
+/**
  * Returns the dot product of two vectors. Arrays are treated and are assumed
  * to have homogenous types.
- * @param a {Array} Vector a
- * @param b {Array} Vector b
+ * @param a {Array[]} Vector a
+ * @param b {Array[]} Vector b
  * @returns {null|number}
  */
 function dot(a, b) {
@@ -44,9 +66,9 @@ function dot(a, b) {
 
 /***
  * Returns the product of two matrices.
- * @param A {Array} Matrix A
- * @param B {Array} Matrix B
- * @returns {null|*[]}
+ * @param A {Array[][]} Matrix A
+ * @param B {Array[][]} Matrix B
+ * @returns {null|Array[][]}
  */
 function matrixMultiply(A, B) {
     console.log(A.length);
@@ -68,6 +90,53 @@ function matrixMultiply(A, B) {
         C.push(row);
     }
     return C;
+}
+
+/**
+ * Returns the matrix representation of the linear affine transformation y = Ax + b
+ * @param A {Array[][]} Linear transformation matrix.
+ * @param b {Array[]}   Translation vector.
+ * @returns {Array[][]} Matrix representing the affine transformation.
+ */
+function transformationMatrix(A, b) {
+    var n = b.length;
+    var mat = [];
+    // Augment matrix A by vector b
+    for (var i = 0; i < n; i++) {
+        var row = A[i];
+        row.push(b[i]);
+        mat.push(row);
+    }
+    // Add the final row of the matrix
+    mat.push(new Array(n+1).fill(0));
+    mat[n][n] = 1;
+
+    return mat;
+}
+
+function matrixInverse2x2(A) {
+    var determinant = A[0][0]*A[1][1] - A[0][1]*A[1][0];
+    console.log("Determinant:", determinant);
+    if (determinant === 0) {
+        console.log("ERROR: Matrix is non-invertible!");
+        return null;
+    }
+
+    console.log("A:", A);
+    var mat = [
+        [A[1][1], -1*A[0][1]],
+        [-1*A[1][0], A[0][0]]
+    ];
+
+    console.log("switch:", mat);
+
+    // Scale by 1.0 / determinant
+    for (var i = 0; i < 2; i++) {
+        for (var j = 0; j < 2; j++) {
+            mat[i][j] = mat[i][j] / determinant;
+        }
+    }
+    return mat;
 }
 
 function createTextureAndFramebuffer(gl) {
@@ -116,13 +185,29 @@ function setAttributes(gl, program) {
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 }
 
-function iterate() {
+// function getInverses() {
+//     if (document.getElementById("f_0-enable").checked) {
+//
+//         var A_0 =
+//     }
+// }
+
+
+function draw() {
     var n = parseInt(document.getElementById("iteration-count-field").value);
     console.log("n:", n)
 
     if (!initParams()) {
         return;
     }
+    console.log(params);
+
+    var f0 = params.f0;
+    var A = [[f0.a, f0.b],
+             [f0.c, f0.d]];
+    var b = [f0.e, f0.f];
+
+    console.log(matrixInverse2x2(A));
 
     // Create initial texture
     var texture = gl.createTexture();
@@ -142,6 +227,7 @@ function iterate() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+    // Transformation iteration
     for (let i = 0; i < n; i++) {
         console.log(i);
 
@@ -168,20 +254,36 @@ function iterate() {
         var tmp = prev
         prev = current
         current = tmp;
-
     }
 }
+
 
 function initParams() {
     try {
         params = {
-            f_0: {
+            f0: {
                 a: math.evaluate(document.getElementById("f_0-a").value),
                 b: math.evaluate(document.getElementById("f_0-b").value),
                 c: math.evaluate(document.getElementById("f_0-c").value),
                 d: math.evaluate(document.getElementById("f_0-d").value),
                 e: math.evaluate(document.getElementById("f_0-e").value),
                 f: math.evaluate(document.getElementById("f_0-f").value),
+            },
+            f_1: {
+                a: math.evaluate(document.getElementById("f_1-a").value),
+                b: math.evaluate(document.getElementById("f_1-b").value),
+                c: math.evaluate(document.getElementById("f_1-c").value),
+                d: math.evaluate(document.getElementById("f_1-d").value),
+                e: math.evaluate(document.getElementById("f_1-e").value),
+                f: math.evaluate(document.getElementById("f_1-f").value),
+            },
+            f_2: {
+                a: math.evaluate(document.getElementById("f_2-a").value),
+                b: math.evaluate(document.getElementById("f_2-b").value),
+                c: math.evaluate(document.getElementById("f_2-c").value),
+                d: math.evaluate(document.getElementById("f_2-d").value),
+                e: math.evaluate(document.getElementById("f_2-e").value),
+                f: math.evaluate(document.getElementById("f_2-f").value),
             }
         };
     } catch (e) {
@@ -190,7 +292,6 @@ function initParams() {
     }
     return true;
 }
-
 
 
 function main() {
@@ -215,7 +316,7 @@ function main() {
     current = createTextureAndFramebuffer(gl);
 
 
-    iterate();
+    draw();
 }
 
 main();
