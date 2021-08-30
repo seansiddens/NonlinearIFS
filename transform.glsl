@@ -5,9 +5,7 @@ precision highp float;
 in vec2 v_texCoord;
 
 uniform sampler2D tex;
-uniform float u_time;
-uniform mat2 w0Mat;
-uniform vec2 w0o;
+uniform mat3 u_A0;
 
 out vec4 outColor;
 
@@ -41,7 +39,7 @@ void main() {
     // Map to plane
     vec2 st = v_texCoord;
     st.y = 1.0 - st.y;
-    vec2 p = texture_to_plane(st);
+    vec3 p = vec3(texture_to_plane(st), 1.0); // Get augmented version
 
     // Define function colors
     vec3 c0 = vec3(1.0, 0.5, 0.8);
@@ -49,11 +47,11 @@ void main() {
     vec3 c2 = vec3(0.2, 0.3, 0.9);
 
     // Transform by inverses
-    vec2 p0 = w0Mat*p + w0o;
+    vec3 p0 = u_A0 * p;
 
     // Sum up densities
     vec3 col = vec3(0.0);
-    col += unpack(plane_to_texture(p0));
+    col += unpack(plane_to_texture(p0.xy));
 
     // Write back to texture
     outColor = vec4(pack(col), 1.0);

@@ -32,9 +32,6 @@ void main() {
 }
 
 
-
-
-
 /**
  * Returns the nth column of a matrix.
  * @param mat
@@ -46,7 +43,7 @@ function getColumn(mat, n) {
 }
 
 /**
- * Returns the dot product of two vectors. Arrays are treated and are assumed
+ * Returns the dot product of two vectors. Arrays are treated as vectors and are assumed
  * to have homogenous types.
  * @param a {Array[]} Vector a
  * @param b {Array[]} Vector b
@@ -71,9 +68,6 @@ function dot(a, b) {
  * @returns {null|Array[][]}
  */
 function matrixMultiply(A, B) {
-    console.log(A.length);
-    console.log(B[0].length);
-
     // Columns of A must be equal to rows of B
     if (A[0].length !== B.length) {
         console.log("ERROR: Matrix multiplication dimension mismatch!");
@@ -114,21 +108,22 @@ function transformationMatrix(A, b) {
     return mat;
 }
 
+/**
+ * Returns the inverse of a 2x2 matrix.
+ * @param A {Array[][]}
+ * @returns {null|Array[][]}
+ */
 function matrixInverse2x2(A) {
     var determinant = A[0][0]*A[1][1] - A[0][1]*A[1][0];
-    console.log("Determinant:", determinant);
     if (determinant === 0) {
         console.log("ERROR: Matrix is non-invertible!");
         return null;
     }
 
-    console.log("A:", A);
     var mat = [
         [A[1][1], -1*A[0][1]],
         [-1*A[1][0], A[0][0]]
     ];
-
-    console.log("switch:", mat);
 
     // Scale by 1.0 / determinant
     for (var i = 0; i < 2; i++) {
@@ -185,13 +180,87 @@ function setAttributes(gl, program) {
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 }
 
-// function getInverses() {
-//     if (document.getElementById("f_0-enable").checked) {
-//
-//         var A_0 =
-//     }
-// }
+/**
+ * Returns the transformation matrices representing the inverse of our affine functions.
+ * The matrices are only computed if the function is selected.
+ * @returns {{A1: *[], A2: *[], A0: *[]}}
+ */
+function getInverses() {
+    var inverses = {
+        A0: [],
+        A1: [],
+        A2: []
+    };
 
+    if (document.getElementById("f_0-enable").checked) {
+        let f0 = params.f0;
+        let A0 = [
+            [f0.a, f0.b],
+            [f0.c, f0.d]
+        ];
+        let b0 = [[f0.e], [f0.f]];
+        let M0 = math.inv(transformationMatrix(A0, [b0[0][0], b0[1][0]]));
+        inverses.A0 = [M0[0][0], M0[1][0], M0[2][0], M0[0][1], M0[1][1], M0[2][1], M0[0][2], M0[1][2], M0[2][2]];
+
+    }
+    if (document.getElementById("f_1-enable").checked) {
+        let f1 = params.f1;
+        let A1 = [
+            [f1.a, f1.b],
+            [f1.c, f1.d]
+        ];
+        let b1 = [[f1.e], [f1.f]];
+        let M1 = math.inv(transformationMatrix(A1, [b1[0][0], b1[1][0]]));
+        inverses.A1 = [M1[0][0], M1[1][0], M1[2][0], M1[0][1], M1[1][1], M1[2][1], M1[0][2], M1[1][2], M1[2][2]];
+    }
+    if (document.getElementById("f_2-enable").checked) {
+        let f2 = params.f2;
+        let A2 = [
+            [f2.a, f2.b],
+            [f2.c, f2.d]
+        ];
+        let b2 = [[f2.e], [f2.f]];
+        let M2 = math.inv(transformationMatrix(A2, [b2[0][0], b2[1][0]]));
+        inverses.A2 = [M2[0][0], M2[1][0], M2[2][0], M2[0][1], M2[1][1], M2[2][1], M2[0][2], M2[1][2], M2[2][2]];
+    }
+
+    return inverses;
+}
+
+function initParams() {
+    try {
+        params = {
+            f0: {
+                a: math.evaluate(document.getElementById("f_0-a").value),
+                b: math.evaluate(document.getElementById("f_0-b").value),
+                c: math.evaluate(document.getElementById("f_0-c").value),
+                d: math.evaluate(document.getElementById("f_0-d").value),
+                e: math.evaluate(document.getElementById("f_0-e").value),
+                f: math.evaluate(document.getElementById("f_0-f").value),
+            },
+            f1: {
+                a: math.evaluate(document.getElementById("f_1-a").value),
+                b: math.evaluate(document.getElementById("f_1-b").value),
+                c: math.evaluate(document.getElementById("f_1-c").value),
+                d: math.evaluate(document.getElementById("f_1-d").value),
+                e: math.evaluate(document.getElementById("f_1-e").value),
+                f: math.evaluate(document.getElementById("f_1-f").value),
+            },
+            f2: {
+                a: math.evaluate(document.getElementById("f_2-a").value),
+                b: math.evaluate(document.getElementById("f_2-b").value),
+                c: math.evaluate(document.getElementById("f_2-c").value),
+                d: math.evaluate(document.getElementById("f_2-d").value),
+                e: math.evaluate(document.getElementById("f_2-e").value),
+                f: math.evaluate(document.getElementById("f_2-f").value),
+            }
+        };
+    } catch (e) {
+        alert(e);
+        return false;
+    }
+    return true;
+}
 
 function draw() {
     var n = parseInt(document.getElementById("iteration-count-field").value);
@@ -202,12 +271,15 @@ function draw() {
     }
     console.log(params);
 
-    var f0 = params.f0;
-    var A = [[f0.a, f0.b],
-             [f0.c, f0.d]];
-    var b = [f0.e, f0.f];
+    var inverses = getInverses();
 
-    console.log(matrixInverse2x2(A));
+    console.log(inverses);
+
+    // Get uniform locations
+    var A0Loc = gl.getUniformLocation(transformProgram, "u_A0");
+    // gl.getUniformLocation(transformProgram, "u_A1");
+    // gl.getUniformLocation(transformProgram, "u_A2");
+
 
     // Create initial texture
     var texture = gl.createTexture();
@@ -227,6 +299,7 @@ function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+
     // Transformation iteration
     for (let i = 0; i < n; i++) {
         console.log(i);
@@ -235,7 +308,7 @@ function draw() {
         setAttributes(gl, transformProgram);
         gl.useProgram(transformProgram);
         // Pass uniforms
-
+        gl.uniformMatrix3fv(A0Loc, false, inverses.A0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, current.fb);
         gl.bindTexture(gl.TEXTURE_2D, prev.tex);
         gl.clearColor(0, 0, 0, 1);
@@ -255,42 +328,8 @@ function draw() {
         prev = current
         current = tmp;
     }
-}
 
 
-function initParams() {
-    try {
-        params = {
-            f0: {
-                a: math.evaluate(document.getElementById("f_0-a").value),
-                b: math.evaluate(document.getElementById("f_0-b").value),
-                c: math.evaluate(document.getElementById("f_0-c").value),
-                d: math.evaluate(document.getElementById("f_0-d").value),
-                e: math.evaluate(document.getElementById("f_0-e").value),
-                f: math.evaluate(document.getElementById("f_0-f").value),
-            },
-            f_1: {
-                a: math.evaluate(document.getElementById("f_1-a").value),
-                b: math.evaluate(document.getElementById("f_1-b").value),
-                c: math.evaluate(document.getElementById("f_1-c").value),
-                d: math.evaluate(document.getElementById("f_1-d").value),
-                e: math.evaluate(document.getElementById("f_1-e").value),
-                f: math.evaluate(document.getElementById("f_1-f").value),
-            },
-            f_2: {
-                a: math.evaluate(document.getElementById("f_2-a").value),
-                b: math.evaluate(document.getElementById("f_2-b").value),
-                c: math.evaluate(document.getElementById("f_2-c").value),
-                d: math.evaluate(document.getElementById("f_2-d").value),
-                e: math.evaluate(document.getElementById("f_2-e").value),
-                f: math.evaluate(document.getElementById("f_2-f").value),
-            }
-        };
-    } catch (e) {
-        alert(e);
-        return false;
-    }
-    return true;
 }
 
 
