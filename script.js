@@ -1,3 +1,9 @@
+// TODO: Implement nonlinear variations and associated jacobians
+// TODO: Different render modes (visualize distance field)
+// TODO: Different view mode (view texture or plane)
+// TODO: Configurable starting set (shapes, bi-unit square, unit square, image?, etc)
+// TODO: Color picker for functions
+
 // Globals
 var gl;
 var initProgram;
@@ -114,7 +120,10 @@ function iterate() {
     var n = parseInt(document.getElementById("iteration-count-field").value);
     console.log("n:", n)
 
-    initParams();
+    if (!initParams()) {
+        return;
+    }
+
     // Create initial texture
     var texture = gl.createTexture();
     var data = new Uint8Array(gl.canvas.width * gl.canvas.heigth * 4);
@@ -164,16 +173,22 @@ function iterate() {
 }
 
 function initParams() {
-    params = {
-        f_0: {
-            a: math.evaluate(document.getElementById("f_0-a").value),
-            b: math.evaluate(document.getElementById("f_0-b").value),
-            c: math.evaluate(document.getElementById("f_0-c").value),
-            d: math.evaluate(document.getElementById("f_0-d").value),
-        }
-    };
-
-    console.log(params);
+    try {
+        params = {
+            f_0: {
+                a: math.evaluate(document.getElementById("f_0-a").value),
+                b: math.evaluate(document.getElementById("f_0-b").value),
+                c: math.evaluate(document.getElementById("f_0-c").value),
+                d: math.evaluate(document.getElementById("f_0-d").value),
+                e: math.evaluate(document.getElementById("f_0-e").value),
+                f: math.evaluate(document.getElementById("f_0-f").value),
+            }
+        };
+    } catch (e) {
+        alert(e);
+        return false;
+    }
+    return true;
 }
 
 

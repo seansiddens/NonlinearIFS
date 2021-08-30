@@ -8,9 +8,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="style.css">
 
-        <script src="https://cdnjs.com/libraries/mathjs" type="text/javascript"></script>
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
         <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script src="math.js" type="text/javascript"></script>
         <script src="webgl-utils.js"></script>
     </head>
     <body>
@@ -22,35 +22,45 @@
                 <!-- Params --->
                 <td style="padding: 5%" id="params">
                     <!-- Iteration count --->
-                    <div id="iteration-count">
+                    <p style="white-space: nowrap; text-decoration: underline;">Iteration Count</p>
+                    <div id="iteration-count"
                         <label for="iteration-count-field">\( n = \)</label>
-                        <input type="text" id="iteration-count-field" size=4 value="0" onblur="iterate(this.value)">
+                        <input type="text" id="iteration-count-field" size=4 value="0">
                     </div>
                     <br>
-                    <!-- Affine maps --->
+                    <!-- Affine Transformations --->
+                    <p style="white-space: nowrap; text-decoration: underline;">Affine Transformations</p>
                     <div id="affine-maps">
+                        <!-- Affine transformation 0 -->
                         <table id="affine-map0">
                             <tr>
+                                <td>
+                                    <input type="checkbox" id="f_0-enable" class="affine_enables">
+                                </td>
+                                <td>
+                                    \( f_{0}(x, y) \; = \; \)
+                                </td>
+                                <!-- Transformation Matrix -->
                                 <td>
                                     <table class="matrix">
                                         <tr>
                                             <td>
                                                 <label for="f_0-a"></label>
-                                                <input type="text" id="f_0-a" size=4 value="1" onblur="iterate()">
+                                                <input type="text" id="f_0-a" size=4 value="1">
                                             </td>
                                             <td>
                                                 <label for="f_0-b"></label>
-                                                <input type="text" id="f_0-b" size=4 value="0" onblur="iterate()">
+                                                <input type="text" id="f_0-b" size=4 value="0">
                                             </td>
                                         </tr>
                                         <tr>
                                             <td>
                                                 <label for="f_0-c"></label>
-                                                <input type="text" id="f_0-c" size=4 value="0" onblur="iterate()">
+                                                <input type="text" id="f_0-c" size=4 value="0">
                                             </td>
                                             <td>
                                                 <label for="f_0-d"></label>
-                                                <input type="text" id="f_0-d" size=4 value="1" onblur="iterate()">
+                                                <input type="text" id="f_0-d" size=4 value="1">
                                             </td>
                                         </tr>
                                     </table>
@@ -58,10 +68,147 @@
                                 <td style="vertical-align: center;">
                                     \(\begin{pmatrix} x \cr y \end{pmatrix} \; + \;  \)
                                 </td>
+                                <!-- Translation -->
+                                <td>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-e"></label>
+                                                <input type="text" id="f_0-e" size=4 value="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-f"></label>
+                                                <input type="text" id="f_0-f" size=4 value="0">
+                                            </td>
+
+                                        </tr>
+                                    </table>
+                                </td>
                             </tr>
                         </table>
+                        <br>
+                        <!-- Affine transformation 1 -->
+                        <table id="affine-map1">
+                            <tr>
+                                <td>
+                                    <input type="checkbox" id="f_1-enable" class="affine_enables">
+                                </td>
+                                <td>
+                                    \( f_{1}(x, y) \; = \; \)
+                                </td>
+                                <!-- Transformation Matrix -->
+                                <td>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-a"></label>
+                                                <input type="text" id="f_1-a" size=4 value="1">
+                                            </td>
+                                            <td>
+                                                <label for="f_0-b"></label>
+                                                <input type="text" id="f_1-b" size=4 value="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-c"></label>
+                                                <input type="text" id="f_1-c" size=4 value="0">
+                                            </td>
+                                            <td>
+                                                <label for="f_0-d"></label>
+                                                <input type="text" id="f_1-d" size=4 value="1">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="vertical-align: center;">
+                                    \(\begin{pmatrix} x \cr y \end{pmatrix} \; + \;  \)
+                                </td>
+                                <!-- Translation -->
+                                <td>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-e"></label>
+                                                <input type="text" id="f_1-e" size=4 value="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-f"></label>
+                                                <input type="text" id="f_1-f" size=4 value="0">
+                                            </td>
 
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        <br>
+                        <!-- Affine transformation 2 -->
+                        <table id="affine-map2">
+                            <tr>
+                                <td>
+                                    <input type="checkbox" id="f_2-enable" class="affine_enables">
+                                </td>
+                                <td>
+                                    \( f_{0}(x, y) \; = \; \)
+                                </td>
+                                <!-- Transformation Matrix -->
+                                <td>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-a"></label>
+                                                <input type="text" id="f_2-a" size=4 value="1">
+                                            </td>
+                                            <td>
+                                                <label for="f_0-b"></label>
+                                                <input type="text" id="f_2-b" size=4 value="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-c"></label>
+                                                <input type="text" id="f_2-c" size=4 value="0">
+                                            </td>
+                                            <td>
+                                                <label for="f_0-d"></label>
+                                                <input type="text" id="f_2-d" size=4 value="1">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="vertical-align: center;">
+                                    \(\begin{pmatrix} x \cr y \end{pmatrix} \; + \;  \)
+                                </td>
+                                <!-- Translation -->
+                                <td>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-e"></label>
+                                                <input type="text" id="f_2-e" size=4 value="0">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-f"></label>
+                                                <input type="text" id="f_2-f" size=4 value="0">
+                                            </td>
+
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
+                    <br>
+
+                    <button onclick="iterate()">Render</button>
+
                 </td>
             </tr>
         </table>

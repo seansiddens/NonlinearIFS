@@ -1,12 +1,17 @@
 body {
     font-family: sans-serif;
-    background-color: lightgrey;
+    background-color: white;
+}
+
+canvas {
+    border: #336699;
+    border-style: solid;
+
 }
 
 input {
     text-align: center;
     border-style: none;
-    background-color: lightgrey;
 }
 
 input:hover {
