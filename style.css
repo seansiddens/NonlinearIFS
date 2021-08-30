@@ -1,3 +1,45 @@
 body {
     font-family: sans-serif;
+    background-color: lightgrey;
 }
+
+input {
+    text-align: center;
+    border-style: none;
+    background-color: lightgrey;
+}
+
+input:hover {
+    background-color: #bbddff;
+}
+
+.matrix input {
+    border-style: none;
+}
+
+.matrix {
+    border-width: medium;
+    border-style: solid;
+    border-color: black;
+    border-bottom: none;
+    border-top: none;
+    border-radius: 10px;
+}
+
+#params {
+    vertical-align: top;
+}
+
+#iteration-count {
+    display:grid;
+    grid-template-columns: max-content max-content;
+    grid-gap:5px;
+}
+
+#iteration-count label       { text-align:right; }
+
+#iteration-count-field {
+    text-align: left;
+}
+
+

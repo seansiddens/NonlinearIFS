@@ -1,13 +1,68 @@
-// GLSL functions to be shared between shader programs
-const glsl_util = `
-vec2 texture_to_plane(vec2 t) {
-    return (2.0*t - 1.0) / sqrt(1.0 - (2.0*t - 1.0)*(2.0*t - 1.0));
+// Globals
+var gl;
+var initProgram;
+var transformProgram;
+var displayProgram;
+var prev;
+var current;
+var params;
+
+/***
+ * Returns the nth column of a matrix.
+ * @param mat
+ * @param n
+ * @returns {Array}
+ */
+function getColumn(mat, n) {
+    return mat.map(x => x[n]);
 }
 
-vec2 plane_to_texture(vec2 p) {
-    return p / (2.0*sqrt(1.0 + p*p)) + 0.5;
+/***
+ * Returns the dot product of two vectors. Arrays are treated and are assumed
+ * to have homogenous types.
+ * @param a {Array} Vector a
+ * @param b {Array} Vector b
+ * @returns {null|number}
+ */
+function dot(a, b) {
+    if (a.length !== b.length) {
+        console.log("ERROR: Dot product dimension mismatch!");
+        return null;
+    }
+    var sum = 0;
+    for (i = 0; i < a.length; i++) {
+        sum += (a[i] * b[i]);
+    }
+    return sum;
 }
-`;
+
+/***
+ * Returns the product of two matrices.
+ * @param A {Array} Matrix A
+ * @param B {Array} Matrix B
+ * @returns {null|*[]}
+ */
+function matrixMultiply(A, B) {
+    console.log(A.length);
+    console.log(B[0].length);
+
+    // Columns of A must be equal to rows of B
+    if (A[0].length !== B.length) {
+        console.log("ERROR: Matrix multiplication dimension mismatch!");
+        return null;
+    }
+    // Dimension of product matrix is: (# of rows of A) x (# of columns of B)
+    var C = []
+    for (let i = 0; i < A.length; i++) {
+        var row = []
+        for (let j = 0; j < B[0].length; j++) {
+            // C[i][j] = dot(ith row of A, jth col of B)
+            row.push(dot(A[i], getColumn(B, j)));
+        }
+        C.push(row);
+    }
+    return C;
+}
 
 function createTextureAndFramebuffer(gl) {
     const tex = gl.createTexture();
@@ -55,49 +110,11 @@ function setAttributes(gl, program) {
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 }
 
-function main() {
-    // Set width and height of canvas
-    var canvas = document.getElementById("canvas");
+function iterate() {
+    var n = parseInt(document.getElementById("iteration-count-field").value);
+    console.log("n:", n)
 
-    // Get a WebGL context from canvas
-    var gl = canvas.getContext("webgl2");
-    if (!gl) {
-        console.log("No webgl!");
-    }
-
-    // Create program from shader sources
-    var initProgram = createProgramFromSource(gl, "vert.glsl", "init.glsl")
-    var transformProgram = createProgramFromSource(gl, "vert.glsl", "transform.glsl")
-    var displayProgram = createProgramFromSource(gl, "vert.glsl", "display.glsl");
-    var prev = createTextureAndFramebuffer(gl);
-    var current = createTextureAndFramebuffer(gl);
-
-    // Look up uniform locations
-    // var resolutionUniformLocation = gl.getUniformLocation(transformProgram, "u_resolution");
-    var timeUniformLocation = gl.getUniformLocation(transformProgram, "u_time");
-    // var frameUniformLocation = gl.getUniformLocation(program, "u_frame");
-
-
-    // IFS parameters
-    var sierpinkski_triangle = {
-        numFunctions: 3,
-        w0Mat: [2.1, 0, 0, 2.1],
-        w0o: [0, -2.1/2]
-    }
-
-    var IFS = sierpinkski_triangle;
-
-    // Param uniforms for IFS functions
-    var w0MatLoc = gl.getUniformLocation(transformProgram, "w0Mat");
-    var w0yLoc = gl.getUniformLocation(transformProgram, "w0y");
-    var w0oLoc = gl.getUniformLocation(transformProgram, "w0o");
-    var w1xLoc = gl.getUniformLocation(transformProgram, "w1x");
-    var w1yLoc = gl.getUniformLocation(transformProgram, "w1y");
-    var w1oLoc = gl.getUniformLocation(transformProgram, "w1o");
-    var w2xLoc = gl.getUniformLocation(transformProgram, "w2x");
-    var w2yLoc = gl.getUniformLocation(transformProgram, "w2y");
-    var w2oLoc = gl.getUniformLocation(transformProgram, "w2o");
-
+    initParams();
     // Create initial texture
     var texture = gl.createTexture();
     var data = new Uint8Array(gl.canvas.width * gl.canvas.heigth * 4);
@@ -107,7 +124,6 @@ function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-
     // Render initial starting texture
     setAttributes(gl, initProgram);
     gl.useProgram(initProgram);
@@ -117,52 +133,74 @@ function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    var frame = 0;
-    var n = 2;
-    var prev_time = 0;
-    var delta_time = 0;
-    function render(time) {
-        time *= 0.001; // convert to seconds
-        delta_time = time - prev_time;
-        prev_time = time;
-        frame += 1;
-        document.getElementById("time_counter").innerHTML = "Time: " + time.toFixed(2) + "s";
-        document.getElementById("frame_counter").innerHTML = "Frame: " + frame;
-        document.getElementById("fps_counter").innerHTML = "FPS: " + Math.round(1.0 / delta_time);
+    for (let i = 0; i < n; i++) {
+        console.log(i);
 
+        // Transformation pass
+        setAttributes(gl, transformProgram);
+        gl.useProgram(transformProgram);
+        // Pass uniforms
 
-        if (frame < n) {
-            // Transformation pass
-            setAttributes(gl, transformProgram);
-            gl.useProgram(transformProgram);
-            // Pass uniforms
-            gl.uniform1f(timeUniformLocation, time);
-            gl.uniformMatrix2fv(w0MatLoc, false, IFS.w0Mat);
-            gl.uniform2fv(w0oLoc, IFS.w0o);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, current.fb);
+        gl.bindTexture(gl.TEXTURE_2D, prev.tex);
+        gl.clearColor(0, 0, 0, 1);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, current.fb);
-            gl.bindTexture(gl.TEXTURE_2D, prev.tex);
-            gl.clearColor(0, 0, 0, 1);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        // Final display pass
+        setAttributes(gl, displayProgram);
+        gl.useProgram(displayProgram);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, current.tex);
+        gl.clearColor(0, 0, 0, 1);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-            // Final display pass
-            setAttributes(gl, displayProgram);
-            gl.useProgram(displayProgram);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.bindTexture(gl.TEXTURE_2D, current.tex);
-            gl.clearColor(0, 0, 0, 1);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        var tmp = prev
+        prev = current
+        current = tmp;
 
-            var tmp = prev
-            prev = current
-            current = tmp;
-
-        }
-
-        requestAnimationFrame(render);
     }
-    requestAnimationFrame(render);
 }
 
+function initParams() {
+    params = {
+        f_0: {
+            a: math.evaluate(document.getElementById("f_0-a").value),
+            b: math.evaluate(document.getElementById("f_0-b").value),
+            c: math.evaluate(document.getElementById("f_0-c").value),
+            d: math.evaluate(document.getElementById("f_0-d").value),
+        }
+    };
+
+    console.log(params);
+}
+
+
+
+function main() {
+    // Initialize default param values
+    document.getElementById("iteration-count-field").value = "0";
+
+    canvas = document.getElementById("canvas");
+
+    // Get a WebGL context from canvas
+    gl = canvas.getContext("webgl2");
+    if (!gl) {
+        console.log("No webgl!");
+    }
+
+    // Create program from shader sources
+    initProgram = createProgramFromSource(gl, "vert.glsl", "init.glsl")
+    transformProgram = createProgramFromSource(gl, "vert.glsl", "transform.glsl")
+    displayProgram = createProgramFromSource(gl, "vert.glsl", "display.glsl");
+
+    // Create frame buffers and textures
+    prev = createTextureAndFramebuffer(gl);
+    current = createTextureAndFramebuffer(gl);
+
+
+    iterate();
+}
+
+main();

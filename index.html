@@ -6,16 +6,66 @@
         <title>IFS</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="">
+        <link rel="stylesheet" href="style.css">
 
-        <canvas id="canvas" width="400" height="400"></canvas>
+        <script src="https://cdnjs.com/libraries/mathjs" type="text/javascript"></script>
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script src="webgl-utils.js"></script>
     </head>
     <body>
-        <p id="frame_counter">Frame: </p>
-        <button onclick="main()">Start</button>
-        <p id="time_counter">Time: </p>
-        <p id="fps_counter">FPS: </p>
+        <table>
+            <tr>
+                <td>
+                    <canvas id="canvas" width="512" height="512"></canvas>
+                </td>
+                <!-- Params --->
+                <td style="padding: 5%" id="params">
+                    <!-- Iteration count --->
+                    <div id="iteration-count">
+                        <label for="iteration-count-field">\( n = \)</label>
+                        <input type="text" id="iteration-count-field" size=4 value="0" onblur="iterate(this.value)">
+                    </div>
+                    <br>
+                    <!-- Affine maps --->
+                    <div id="affine-maps">
+                        <table id="affine-map0">
+                            <tr>
+                                <td>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-a"></label>
+                                                <input type="text" id="f_0-a" size=4 value="1" onblur="iterate()">
+                                            </td>
+                                            <td>
+                                                <label for="f_0-b"></label>
+                                                <input type="text" id="f_0-b" size=4 value="0" onblur="iterate()">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="f_0-c"></label>
+                                                <input type="text" id="f_0-c" size=4 value="0" onblur="iterate()">
+                                            </td>
+                                            <td>
+                                                <label for="f_0-d"></label>
+                                                <input type="text" id="f_0-d" size=4 value="1" onblur="iterate()">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="vertical-align: center;">
+                                    \(\begin{pmatrix} x \cr y \end{pmatrix} \; + \;  \)
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+                </td>
+            </tr>
+        </table>
+
         <script src="script.js"></script>
     </body>
 </html>
