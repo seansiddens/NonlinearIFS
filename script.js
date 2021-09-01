@@ -16,19 +16,47 @@ var params;
 var affine_inverses;
 
 // Shaders ------------------------------------------------------------------------------
-const vertSource = () => {
-   return `
-   
-#version 300 es
-in vec4 a_position;
-in vec2 a_texCoord;
+const vertSource = `#version 300 es
 
-out vec2 v_texCoord;
-
+in vec4 position;
 
 void main() {
-    gl_Position = a_position;
-    v_texCoord = a_texCoord;`;
+  gl_Position = position;
+}
+`;
+
+
+const initSource = () => {
+    var source = `#version 300 es
+
+#define EPSILON 0.01
+precision highp float;
+in vec2 v_texCoord;
+uniform sampler2D tex;
+out vec4 outColor;
+
+vec2 texture_to_plane(vec2 t) {
+    return (2.0*t - 1.0) / sqrt(1.0 - (2.0*t - 1.0)*(2.0*t - 1.0));
+}
+
+void main() {
+    // Map tex coords to plane
+    vec2 p = texture_to_plane(v_texCoord);
+
+    // Non-zero when p.x >= 1.0 or p.y >= 1.0
+    float top_left = length(step(vec2(1.0+EPSILON), p));
+    // Non-zero when p.x <= -1.0 or py <= -1.0
+    float bottom_right = length(vec2(1.0) - step(vec2(-1.0-EPSILON), p));
+
+    // Only tex coords corresponding to points on the plane
+    // from (-1.0, -1.0) to (1.0, 1.0) are colored white
+    vec3 col = vec3(bottom_right + top_left);
+
+    outColor = vec4(vec3(1.0) - col, 1.0);
+}
+`;
+
+    return source;
 }
 
 
@@ -345,17 +373,31 @@ function main() {
         console.log("No webgl!");
     }
 
-    // Create program from shader sources
-    initProgram = createProgramFromSource(gl, "vert.glsl", "init.glsl")
-    transformProgram = createProgramFromSource(gl, "vert.glsl", "transform.glsl")
-    displayProgram = createProgramFromSource(gl, "vert.glsl", "display.glsl");
+    console.log(vertSource);
 
-    // Create frame buffers and textures
-    prev = createTextureAndFramebuffer(gl);
-    current = createTextureAndFramebuffer(gl);
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs, vertSource);
+    gl.compileShader(vs)
+    // Catch some possible errors on vertex shader
+    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(vs))
+    }
 
+    // Catch some possible errors on vertex shader
+    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(vs))
+    }
 
-    draw();
+    // // Compile shaders from source
+    // initProgram = createProgramFromSource(gl, vertSource, "init.glsl", true)
+    // transformProgram = createProgramFromSource(gl, "vert.glsl", "transform.glsl", true)
+    // displayProgram = createProgramFromSource(gl, "vert.glsl", "display.glsl", true);
+    //
+    // // Create frame buffers and textures
+    // prev = createTextureAndFramebuffer(gl);
+    // current = createTextureAndFramebuffer(gl);
+    //
+    // draw();
 }
 
 main();

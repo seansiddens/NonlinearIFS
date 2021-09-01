@@ -14,7 +14,6 @@ vec2 texture_to_plane(vec2 t) {
     return (2.0*t - 1.0) / sqrt(1.0 - (2.0*t - 1.0)*(2.0*t - 1.0));
 }
 
-
 void main() {
     // Map tex coords to plane
     vec2 p = texture_to_plane(v_texCoord);

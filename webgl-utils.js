@@ -57,10 +57,17 @@ function createProgram(gl, vertexShader, fragmentShader) {
  * @param {string} fragSource File name of the fragment shader
  * @return {WebGlProgram} The created program
  */
-function createProgramFromSource(gl,vertSource, fragSource) {
-    // Get shader source code from file
-    var vertexShaderSource = loadTextFromFile(vertSource);
-    var fragmentShaderSource = loadTextFromFile(fragSource);
+function createProgramFromSource(gl,vertSource, fragSource, fromFile) {
+    var vertexShaderSource;
+    var fragmentShaderSource;
+    if (fromFile) {
+        // Get shader source code from file
+        vertexShaderSource = loadTextFromFile(vertSource);
+        fragmentShaderSource = loadTextFromFile(fragSource);
+    } else {
+        vertexShaderSource = vertSource;
+        fragmentShaderSource = fragSource;
+    }
 
     // Compile shaders from source
     var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
