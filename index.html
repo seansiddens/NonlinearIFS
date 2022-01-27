@@ -11,7 +11,6 @@
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
         <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script src="math.js" type="text/javascript"></script>
-        <script src="webgl-utils.js"></script>
     </head>
     <body>
         <table>
@@ -25,7 +24,7 @@
                     <p style="white-space: nowrap; text-decoration: underline;">Iteration Count</p>
                     <div id="iteration-count"
                         <label for="iteration-count-field">\( n = \)</label>
-                        <input type="text" id="iteration-count-field" size=4 value="0">
+                        <input type="text" id="iteration-count-field" size=4 value="0", onfocus="this.select()">
                     </div>
                     <br>
                     <!-- Affine Transformations --->

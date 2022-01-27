@@ -14,50 +14,12 @@ var prev;
 var current;
 var params;
 var affine_inverses;
+var vertSource;
+var initSource;
+var transformSource;
+var displaySource;
 
 // Shaders ------------------------------------------------------------------------------
-const vertSource = `#version 300 es
-
-in vec4 position;
-
-void main() {
-  gl_Position = position;
-}
-`;
-
-
-const initSource = () => {
-    var source = `#version 300 es
-
-#define EPSILON 0.01
-precision highp float;
-in vec2 v_texCoord;
-uniform sampler2D tex;
-out vec4 outColor;
-
-vec2 texture_to_plane(vec2 t) {
-    return (2.0*t - 1.0) / sqrt(1.0 - (2.0*t - 1.0)*(2.0*t - 1.0));
-}
-
-void main() {
-    // Map tex coords to plane
-    vec2 p = texture_to_plane(v_texCoord);
-
-    // Non-zero when p.x >= 1.0 or p.y >= 1.0
-    float top_left = length(step(vec2(1.0+EPSILON), p));
-    // Non-zero when p.x <= -1.0 or py <= -1.0
-    float bottom_right = length(vec2(1.0) - step(vec2(-1.0-EPSILON), p));
-
-    // Only tex coords corresponding to points on the plane
-    // from (-1.0, -1.0) to (1.0, 1.0) are colored white
-    vec3 col = vec3(bottom_right + top_left);
-
-    outColor = vec4(vec3(1.0) - col, 1.0);
-}
-`;
-
-    return source;
-}
 
 
 /**
@@ -220,37 +182,35 @@ function getInverses() {
         A2: []
     };
 
-    if (document.getElementById("f_0-enable").checked) {
-        let f0 = params.f0;
-        let A0 = [
-            [f0.a, f0.b],
-            [f0.c, f0.d]
-        ];
-        let b0 = [[f0.e], [f0.f]];
-        let M0 = math.inv(transformationMatrix(A0, [b0[0][0], b0[1][0]]));
-        inverses.A0 = [M0[0][0], M0[1][0], M0[2][0], M0[0][1], M0[1][1], M0[2][1], M0[0][2], M0[1][2], M0[2][2]];
+    // A0
+    let f0 = params.f0;
+    let A0 = [
+        [f0.a, f0.b],
+        [f0.c, f0.d]
+    ];
+    let b0 = [[f0.e], [f0.f]];
+    let M0 = math.inv(transformationMatrix(A0, [b0[0][0], b0[1][0]]));
+    inverses.A0 = [M0[0][0], M0[1][0], M0[2][0], M0[0][1], M0[1][1], M0[2][1], M0[0][2], M0[1][2], M0[2][2]];
 
-    }
-    if (document.getElementById("f_1-enable").checked) {
-        let f1 = params.f1;
-        let A1 = [
-            [f1.a, f1.b],
-            [f1.c, f1.d]
-        ];
-        let b1 = [[f1.e], [f1.f]];
-        let M1 = math.inv(transformationMatrix(A1, [b1[0][0], b1[1][0]]));
-        inverses.A1 = [M1[0][0], M1[1][0], M1[2][0], M1[0][1], M1[1][1], M1[2][1], M1[0][2], M1[1][2], M1[2][2]];
-    }
-    if (document.getElementById("f_2-enable").checked) {
-        let f2 = params.f2;
-        let A2 = [
-            [f2.a, f2.b],
-            [f2.c, f2.d]
-        ];
-        let b2 = [[f2.e], [f2.f]];
-        let M2 = math.inv(transformationMatrix(A2, [b2[0][0], b2[1][0]]));
-        inverses.A2 = [M2[0][0], M2[1][0], M2[2][0], M2[0][1], M2[1][1], M2[2][1], M2[0][2], M2[1][2], M2[2][2]];
-    }
+    // A1
+    let f1 = params.f1;
+    let A1 = [
+        [f1.a, f1.b],
+        [f1.c, f1.d]
+    ];
+    let b1 = [[f1.e], [f1.f]];
+    let M1 = math.inv(transformationMatrix(A1, [b1[0][0], b1[1][0]]));
+    inverses.A1 = [M1[0][0], M1[1][0], M1[2][0], M1[0][1], M1[1][1], M1[2][1], M1[0][2], M1[1][2], M1[2][2]];
+
+    // A2
+    let f2 = params.f2;
+    let A2 = [
+        [f2.a, f2.b],
+        [f2.c, f2.d]
+    ];
+    let b2 = [[f2.e], [f2.f]];
+    let M2 = math.inv(transformationMatrix(A2, [b2[0][0], b2[1][0]]));
+    inverses.A2 = [M2[0][0], M2[1][0], M2[2][0], M2[0][1], M2[1][1], M2[2][1], M2[0][2], M2[1][2], M2[2][2]];
 
     return inverses;
 }
@@ -327,7 +287,6 @@ function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-
     // Transformation iteration
     for (let i = 0; i < n; i++) {
         console.log(i);
@@ -360,6 +319,170 @@ function draw() {
 
 }
 
+function createProgramFromSource(gl, vertSource, fragSource) {
+    // Compile vertex shader
+    const vertShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertShader, vertSource);
+    gl.compileShader(vertShader)
+    // Catch some possible errors on vertex shader
+    if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(vertShader))
+    }
+
+    // Compile fragment shader
+    const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragShader, fragSource);
+    gl.compileShader(fragShader);
+    if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(fragShader));
+    }
+
+    // Create program
+    program = gl.createProgram();
+    // Attach shaders
+    gl.attachShader(program, vertShader);
+    gl.attachShader(program, fragShader);
+    gl.linkProgram(program);
+    if ( !gl.getProgramParameter(program, gl.LINK_STATUS) ) {
+        var info = gl.getProgramInfoLog(program);
+        throw 'Could not compile WebGL program. \n\n' + info;
+    }
+
+    return program;
+}
+
+function compileShaders() {
+    vertSource = `#version 300 es
+in vec4 a_position;
+in vec2 a_texCoord;
+out vec2 v_texCoord;
+
+void main() {
+    gl_Position = a_position;
+    v_texCoord = a_texCoord;
+}
+`;
+
+
+    initSource = `#version 300 es
+#define EPSILON 0.01
+precision highp float;
+in vec2 v_texCoord;
+uniform sampler2D tex;
+out vec4 outColor;
+
+vec2 texture_to_plane(vec2 t) {
+    return (2.0*t - 1.0) / sqrt(1.0 - (2.0*t - 1.0)*(2.0*t - 1.0));
+}
+
+void main() {
+    // Map tex coords to plane
+    vec2 p = texture_to_plane(v_texCoord);
+
+    // Non-zero when p.x >= 1.0 or p.y >= 1.0
+    float top_left = length(step(vec2(1.0+EPSILON), p));
+    // Non-zero when p.x <= -1.0 or py <= -1.0
+    float bottom_right = length(vec2(1.0) - step(vec2(-1.0-EPSILON), p));
+
+    // Only tex coords corresponding to points on the plane
+    // from (-1.0, -1.0) to (1.0, 1.0) are colored white
+    vec3 col = vec3(bottom_right + top_left);
+
+    outColor = vec4(vec3(1.0) - col, 1.0);
+}
+`;
+
+    transformSource = `#version 300 es
+precision highp float;
+in vec2 v_texCoord;
+uniform sampler2D tex;
+uniform mat3 u_A0;
+out vec4 outColor;
+
+vec2 plane_to_texture(vec2 p) {
+    return p / (2.0*sqrt(1.0 + p*p)) + 0.5;
+}
+
+vec2 texture_to_plane(vec2 t) {
+    return (2.0*t - 1.0) / sqrt(1.0 - (2.0*t - 1.0)*(2.0*t - 1.0));
+}
+
+// Affine transformation of a point by parameters
+vec2 M(vec2 p, mat2 mat, vec2 o) {
+    return mat * p + o;
+}
+
+vec2 swirl_inv(vec2 p) {
+    float r_squared = p.x*p.x + p.y*p.y;
+    return vec2(p.x*sin(r_squared) + p.y*cos(r_squared), -p.x*cos(r_squared) + p.y*sin(r_squared));
+}
+
+vec3 unpack(vec2 t) {
+    return exp2(texture(tex, t).rgb * 20.0) - 1.0;
+}
+
+vec3 pack(vec3 c) {
+    return log2(c + 1.0) * (1.0 / 20.0);
+}
+
+void main() {
+    // Map to plane
+    vec2 st = v_texCoord;
+    st.y = 1.0 - st.y;
+    vec3 p = vec3(texture_to_plane(st), 1.0); // Get augmented version
+
+    // Define function colors
+    vec3 c0 = vec3(1.0, 0.5, 0.8);
+    vec3 c1 = vec3(0.3, 1.0, 0.9);
+    vec3 c2 = vec3(0.2, 0.3, 0.9);
+
+    // Transform by inverses
+    ${document.getElementById("f_0-enable").checked ? `vec3 p0 = u_A0 * p;` : ``} 
+    
+    // Sum up densities
+    vec3 col = vec3(0.0);
+    ${document.getElementById("f_0-enable").checked ? `col += unpack(plane_to_texture(p0.xy));` : ``} 
+    
+
+    // Write back to texture
+    outColor = vec4(pack(col), 1.0);
+}
+`;
+
+
+    displaySource = `#version 300 es
+precision highp float;
+in vec2 v_texCoord;
+uniform sampler2D tex;
+out vec4 outColor;
+
+vec2 plane_to_texture(vec2 p) {
+    return p / (2.0*sqrt(1.0 + p*p)) + 0.5;
+}
+
+vec3 gamma_correct(vec3 col, float gamma) {
+    return pow(col, vec3(1.0 / gamma));
+}
+
+void main() {
+    vec2 uv = v_texCoord;
+    uv.y = 1.0 - uv.y;
+    vec2 p = uv;
+    p *= 2.0;
+    p -= 1.0;
+    vec2 st = plane_to_texture(p);
+
+    vec3 col = gamma_correct(texture(tex, st).rgb, 4.0);
+
+    outColor = vec4(col, 1.0);
+}
+`;
+    // Compile shaders from source
+    initProgram = createProgramFromSource(gl, vertSource, initSource);
+    transformProgram = createProgramFromSource(gl, vertSource, transformSource)
+    displayProgram = createProgramFromSource(gl, vertSource, displaySource);
+}
+
 
 function main() {
     // Initialize default param values
@@ -373,31 +496,14 @@ function main() {
         console.log("No webgl!");
     }
 
-    console.log(vertSource);
+    compileShaders();
 
-    const vs = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vs, vertSource);
-    gl.compileShader(vs)
-    // Catch some possible errors on vertex shader
-    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-        console.error(gl.getShaderInfoLog(vs))
-    }
 
-    // Catch some possible errors on vertex shader
-    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-        console.error(gl.getShaderInfoLog(vs))
-    }
-
-    // // Compile shaders from source
-    // initProgram = createProgramFromSource(gl, vertSource, "init.glsl", true)
-    // transformProgram = createProgramFromSource(gl, "vert.glsl", "transform.glsl", true)
-    // displayProgram = createProgramFromSource(gl, "vert.glsl", "display.glsl", true);
-    //
     // // Create frame buffers and textures
-    // prev = createTextureAndFramebuffer(gl);
-    // current = createTextureAndFramebuffer(gl);
-    //
-    // draw();
+    prev = createTextureAndFramebuffer(gl);
+    current = createTextureAndFramebuffer(gl);
+
+    draw();
 }
 
 main();
